@@ -1,0 +1,2977 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ONE ICTMS API",
+    "version": "1.2.0",
+    "description": "ONE ICTMS Laravel API: registration, email and login OTP, password recovery, and JWT authentication stored in an HttpOnly cookie for browser clients. Redis stores OTP challenges and revoked JWT state. Browser authentication routes use Laravel web middleware for session-backed CSRF protection. The URL base /api plus paths /v1/auth/* yields /api/v1/auth/*. Browser POST endpoints require Laravel CSRF session cookies and a corresponding X-XSRF-TOKEN header; Bearer clients using the same web-protected routes also need CSRF unless routed separately. Library APIs provide Department, Division, and Position lists and authenticated administrative CRUD. Library view/update/delete IDs are supplied in JSON request bodies, never in URL paths. Mutating operations require appropriate administrative authorization before production deployment."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Current application"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "API availability"
+    },
+    {
+      "name": "Authentication",
+      "description": "Registration, OTP login, HttpOnly JWT cookie, profile and logout"
+    },
+    {
+      "name": "Email Verification",
+      "description": "Email OTP verification"
+    },
+    {
+      "name": "Password",
+      "description": "Password recovery and change"
+    },
+    {
+      "name": "Department Library",
+      "description": "Department directory list and management operations"
+    },
+    {
+      "name": "Division Library",
+      "description": "Division directory list and management operations"
+    },
+    {
+      "name": "Position Library",
+      "description": "Position directory list and management operations"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "operationId": "getApiHealth",
+        "summary": "Check API availability",
+        "description": "Returns a success response when the API is running. No authentication is required. This endpoint does not check database or mail service connectivity.",
+        "responses": {
+          "200": {
+            "description": "The API is running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "API is running."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/csrf": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "initializeAuthCsrf",
+        "summary": "Initialize browser CSRF session",
+        "description": "Call before browser POST requests. Under the Laravel web middleware, initializes the CSRF session and returns Laravel session and XSRF-TOKEN cookies. The frontend must retain cookies (same-origin proxy recommended) and send X-XSRF-TOKEN on subsequent unsafe methods. Does not authenticate the user or issue a JWT.",
+        "responses": {
+          "204": {
+            "description": "CSRF session ready; no response body.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Laravel session and XSRF-TOKEN cookies may be set by web middleware.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register new user",
+        "operationId": "register",
+        "responses": {
+          "201": {
+            "description": "Account created. Check your email for the verification code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Account created. Check your email for the verification code."
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Start login and email OTP",
+        "operationId": "login",
+        "responses": {
+          "200": {
+            "description": "Login OTP sent to your email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Login OTP sent to your email."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "challenge_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "expires_in": {
+                          "type": "integer",
+                          "example": 300
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "description": "Email must be verified first. Returns challenge_id and expiry, not a JWT. Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/verify-login-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify login OTP and set HttpOnly JWT cookie",
+        "operationId": "verifyLoginOtp",
+        "responses": {
+          "200": {
+            "description": "OTP verified, JWT stored in an HttpOnly cookie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpCookieLoginResponse"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "ictms_access_token=<signed JWT>; HttpOnly; Path=/; SameSite=Lax; Secure on HTTPS deployments. JWT validity and cookie expiry are approximately 15 minutes.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "ictms_access_token=<jwt>; Path=/; HttpOnly; SameSite=Lax; Max-Age=900; Secure"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyLoginOtpRequest"
+              }
+            }
+          }
+        },
+        "description": "After successful challenge and OTP verification, the server issues a JWT as an HttpOnly cookie (ictms_access_token). The token is not exposed in the JSON response. Browser requests require CSRF initialization and X-XSRF-TOKEN."
+      }
+    },
+    "/v1/auth/resend-login-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Resend login OTP",
+        "operationId": "resendLoginOtp",
+        "responses": {
+          "200": {
+            "description": "A new login code was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "A new login code was sent."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendLoginOtpRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/verify-email": {
+      "post": {
+        "tags": [
+          "Email Verification"
+        ],
+        "summary": "Verify email using OTP",
+        "operationId": "verifyEmail",
+        "responses": {
+          "200": {
+            "description": "Email verified successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Email verified successfully."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/resend-verification": {
+      "post": {
+        "tags": [
+          "Email Verification"
+        ],
+        "summary": "Resend email verification OTP",
+        "operationId": "resendVerification",
+        "responses": {
+          "200": {
+            "description": "If the account needs verification, a code has been sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "If the account needs verification, a code has been sent."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Password"
+        ],
+        "summary": "Email a password reset link",
+        "operationId": "forgotPassword",
+        "responses": {
+          "200": {
+            "description": "If that email is registered, a reset link has been sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "If that email is registered, a reset link has been sent."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Password"
+        ],
+        "summary": "Reset password using token",
+        "operationId": "resetPassword",
+        "responses": {
+          "200": {
+            "description": "Password reset successfully. Please log in again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password reset successfully. Please log in again."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request."
+      }
+    },
+    "/v1/auth/view": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "viewAuthenticatedUser",
+        "summary": "View current authenticated user",
+        "description": "Reads JWT from HttpOnly cookie (or Bearer header when applicable), checks JWT validity, Redis blacklist and token_version middleware, then returns the authenticated user and loaded details. Organization objects are optional and depend on the AuthResource implementation. Browser clients authenticate automatically through the HttpOnly ictms_access_token cookie; Swagger Authorize is only needed for Bearer-token clients.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated user profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticatedProfileResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated, invalid, or expired JWT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied (including revoked token-version policy, depending on middleware).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Revoke current JWT",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logged out successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Logged out successfully."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Expire the HttpOnly JWT cookie with the same path/domain used at issuance.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "ictms_access_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request. Revokes the JWT and clears the HttpOnly JWT cookie for browser clients. Browser POST requires CSRF session/token. Browser clients authenticate automatically through the HttpOnly ictms_access_token cookie; Swagger Authorize is only needed for Bearer-token clients."
+      }
+    },
+    "/v1/auth/change-password": {
+      "post": {
+        "tags": [
+          "Password"
+        ],
+        "summary": "Change authenticated user password",
+        "operationId": "changePassword",
+        "responses": {
+          "200": {
+            "description": "Password changed. Please log in again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Password changed. Please log in again."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Expire the HttpOnly JWT cookie with the same path/domain used at issuance.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "ictms_access_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure"
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch or expired CSRF session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Invalidates existing tokens by incrementing token_version and logging out. Browser clients must initialize CSRF using GET /v1/auth/csrf and retain the associated session and XSRF cookies before submitting this request. Revokes the JWT and clears the HttpOnly JWT cookie for browser clients. Browser POST requires CSRF session/token. Browser clients authenticate automatically through the HttpOnly ictms_access_token cookie; Swagger Authorize is only needed for Bearer-token clients."
+      }
+    },
+    "/v1/library/departments": {
+      "get": {
+        "tags": [
+          "Department Library"
+        ],
+        "operationId": "listLibraryDepartments",
+        "summary": "List active departments",
+        "description": "Lists active departments for registration dropdowns; no authentication required. No URL parameters.",
+        "responses": {
+          "200": {
+            "description": "Departments retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/department-view": {
+      "post": {
+        "tags": [
+          "Department Library"
+        ],
+        "operationId": "departmentView",
+        "summary": "View department",
+        "description": "View one department by ID provided in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Department retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/department-create": {
+      "post": {
+        "tags": [
+          "Department Library"
+        ],
+        "operationId": "departmentCreate",
+        "summary": "Create department",
+        "description": "Create a department; data in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Department created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/department-update": {
+      "post": {
+        "tags": [
+          "Department Library"
+        ],
+        "operationId": "departmentUpdate",
+        "summary": "Update department",
+        "description": "Update a department; id and changes in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Department updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/department-delete": {
+      "post": {
+        "tags": [
+          "Department Library"
+        ],
+        "operationId": "departmentDelete",
+        "summary": "Delete department",
+        "description": "Deactivate a department by setting is_active=false (not a physical deletion). ID is in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Department deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/divisions": {
+      "get": {
+        "tags": [
+          "Division Library"
+        ],
+        "operationId": "listLibraryDivisions",
+        "summary": "List active divisions",
+        "description": "Lists active divisions for registration dropdowns; no authentication required. No URL parameters. Divisions include department_id and a department object for client-side filtering; only divisions belonging to active departments are returned.",
+        "responses": {
+          "200": {
+            "description": "Divisions retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/division-view": {
+      "post": {
+        "tags": [
+          "Division Library"
+        ],
+        "operationId": "divisionView",
+        "summary": "View division",
+        "description": "View one division by ID provided in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Division retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/division-create": {
+      "post": {
+        "tags": [
+          "Division Library"
+        ],
+        "operationId": "divisionCreate",
+        "summary": "Create division",
+        "description": "Create a division; data in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DivisionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Division created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/division-update": {
+      "post": {
+        "tags": [
+          "Division Library"
+        ],
+        "operationId": "divisionUpdate",
+        "summary": "Update division",
+        "description": "Update a division; id and changes in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DivisionUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Division updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DivisionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/division-delete": {
+      "post": {
+        "tags": [
+          "Division Library"
+        ],
+        "operationId": "divisionDelete",
+        "summary": "Delete division",
+        "description": "Deactivate a division by setting is_active=false (not a physical deletion). ID is in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Division deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/positions": {
+      "get": {
+        "tags": [
+          "Position Library"
+        ],
+        "operationId": "listLibraryPositions",
+        "summary": "List active positions",
+        "description": "Lists active positions for registration dropdowns; no authentication required. No URL parameters.",
+        "responses": {
+          "200": {
+            "description": "Positions retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/position-view": {
+      "post": {
+        "tags": [
+          "Position Library"
+        ],
+        "operationId": "positionView",
+        "summary": "View position",
+        "description": "View one position by ID provided in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/position-create": {
+      "post": {
+        "tags": [
+          "Position Library"
+        ],
+        "operationId": "positionCreate",
+        "summary": "Create position",
+        "description": "Create a position; data in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Position created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/position-update": {
+      "post": {
+        "tags": [
+          "Position Library"
+        ],
+        "operationId": "positionUpdate",
+        "summary": "Update position",
+        "description": "Update a position; id and changes in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionItemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/position-delete": {
+      "post": {
+        "tags": [
+          "Position Library"
+        ],
+        "operationId": "positionDelete",
+        "summary": "Delete position",
+        "description": "Deactivate a position by setting is_active=false (not a physical deletion). ID is in the JSON request body. Requires auth:api; add admin/role permission enforcement before production. Cookie clients must follow the CSRF requirements of their actual Laravel middleware setup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Position deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryDeleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: insufficient permissions (when authorization policy is configured)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF token mismatch if routes use session-backed CSRF middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "password",
+          "password_confirmation",
+          "first_name",
+          "last_name"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 50,
+            "example": "test_admin"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "example": "Password123!"
+          },
+          "password_confirmation": {
+            "type": "string",
+            "format": "password",
+            "example": "Password123!"
+          },
+          "first_name": {
+            "type": "string",
+            "example": "Juan"
+          },
+          "middle_name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Santos"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Dela Cruz"
+          },
+          "ext_name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 10,
+            "example": "Jr."
+          },
+          "sex": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "Male",
+              "Female"
+            ]
+          },
+          "position_id": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          },
+          "department_id": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          },
+          "division_id": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "login",
+          "password"
+        ],
+        "properties": {
+          "login": {
+            "type": "string",
+            "example": "test_admin"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "Password123!"
+          }
+        }
+      },
+      "VerifyLoginOtpRequest": {
+        "type": "object",
+        "required": [
+          "challenge_id",
+          "otp"
+        ],
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "otp": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "example": "123456"
+          }
+        }
+      },
+      "ResendLoginOtpRequest": {
+        "type": "object",
+        "required": [
+          "challenge_id"
+        ],
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "VerifyEmailRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "otp"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "otp": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "example": "123456"
+          }
+        }
+      },
+      "EmailRequest": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@example.com"
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "token",
+          "password",
+          "password_confirmation"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "token": {
+            "type": "string",
+            "example": "reset-token-from-email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "NewPassword123!"
+          },
+          "password_confirmation": {
+            "type": "string",
+            "format": "password",
+            "example": "NewPassword123!"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "password",
+          "password_confirmation"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "format": "password"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "NewPassword123!"
+          },
+          "password_confirmation": {
+            "type": "string",
+            "format": "password",
+            "example": "NewPassword123!"
+          }
+        }
+      },
+      "UserDetails": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "middle_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "ext_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "sex": {
+            "type": "string",
+            "nullable": true
+          },
+          "position_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "department_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "division_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "position": {
+            "$ref": "#/components/schemas/OrganizationReference"
+          },
+          "department": {
+            "$ref": "#/components/schemas/OrganizationReference"
+          },
+          "division": {
+            "$ref": "#/components/schemas/OrganizationReference"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "email_verified_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "details": {
+            "$ref": "#/components/schemas/UserDetails"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "API is running."
+          }
+        }
+      },
+      "AuthenticatedProfileResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "User retrieved successfully."
+          },
+          "data": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "OtpCookieLoginResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Login verified successfully."
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "token_type": {
+                "type": "string",
+                "example": "Bearer"
+              },
+              "expires_in": {
+                "type": "integer",
+                "example": 900
+              },
+              "user": {
+                "$ref": "#/components/schemas/User"
+              }
+            },
+            "description": "Access token is not returned in JSON. The server sets the HttpOnly cookie."
+          }
+        }
+      },
+      "CsrfError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "CSRF token mismatch."
+          }
+        }
+      },
+      "OrganizationReference": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "example": "Information and Communications Technology Management Service"
+          }
+        }
+      },
+      "DepartmentLibraryRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "alias",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "example": "Information and Communications Technology Management Service"
+          }
+        }
+      },
+      "DepartmentCreateRequest": {
+        "type": "object",
+        "required": [
+          "alias",
+          "name"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "DepartmentUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "description": "Fields other than id are optional. The Laravel request permits partial updates."
+      },
+      "LibraryIdRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "DepartmentListResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Departments retrieved successfully."
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentLibraryRecord"
+            }
+          }
+        }
+      },
+      "DepartmentItemResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Department retrieved successfully."
+          },
+          "data": {
+            "$ref": "#/components/schemas/DepartmentLibraryRecord"
+          }
+        }
+      },
+      "DivisionLibraryRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "alias",
+          "name",
+          "department_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "example": "Information and Communications Technology Management Service"
+          },
+          "department_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "department": {
+            "$ref": "#/components/schemas/OrganizationReference"
+          }
+        }
+      },
+      "DivisionCreateRequest": {
+        "type": "object",
+        "required": [
+          "alias",
+          "name",
+          "department_id"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          },
+          "department_id": {
+            "type": "integer",
+            "description": "ID of an active Department. Provided in the JSON body, not the URL.",
+            "example": 1
+          }
+        }
+      },
+      "DivisionUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          },
+          "department_id": {
+            "type": "integer",
+            "description": "ID of an active Department. Provided in the JSON body, not the URL.",
+            "example": 1
+          }
+        },
+        "description": "Fields other than id are optional. The Laravel request permits partial updates."
+      },
+      "DivisionListResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Divisions retrieved successfully."
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DivisionLibraryRecord"
+            }
+          }
+        }
+      },
+      "DivisionItemResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Division retrieved successfully."
+          },
+          "data": {
+            "$ref": "#/components/schemas/DivisionLibraryRecord"
+          }
+        }
+      },
+      "PositionLibraryRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "alias",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "example": "Information and Communications Technology Management Service"
+          }
+        }
+      },
+      "PositionCreateRequest": {
+        "type": "object",
+        "required": [
+          "alias",
+          "name"
+        ],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "PositionUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "alias": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Information and Communications Technology Management Service"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "description": "Fields other than id are optional. The Laravel request permits partial updates."
+      },
+      "PositionListResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Positions retrieved successfully."
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionLibraryRecord"
+            }
+          }
+        }
+      },
+      "PositionItemResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Position retrieved successfully."
+          },
+          "data": {
+            "$ref": "#/components/schemas/PositionLibraryRecord"
+          }
+        }
+      },
+      "LibraryDeleteResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Department deactivated successfully."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Use bearer JWT where supported; browser authentication uses an HttpOnly JWT cookie."
+      }
+    }
+  }
+}

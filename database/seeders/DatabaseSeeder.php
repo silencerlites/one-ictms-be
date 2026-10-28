@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\StakeholderType;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -17,6 +18,13 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             DivisionSeeder::class,
             PositionSeeder::class,
+            DevelopmentSolutionTypeSeeder::class,
+            DevelopmentTypeSeeder::class,
+            DocumentTypeSeeder::class,
+            ManagingTypeSeeder::class,
+            RegistryStatusSeeder::class,
+            StakeholderTypeSeeder::class,
+            TechStackSeeder::class
         ]);
 
         // Create a development test user.

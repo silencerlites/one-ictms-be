@@ -8,4 +8,5 @@ Route::get('/health', function () {return response()->json(['success' => true, '
 Route::prefix('v1')->group(function () {
     Route::prefix('auth')->middleware('web')->group(base_path('routes/api/auth.routes.php'));
     Route::prefix('library')->group(base_path('routes/api/library.routes.php'));
+    Route::prefix('registry')->group(base_path('routes/api/registry.routes.php'));
 });

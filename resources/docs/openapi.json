@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ONE ICTMS API",
-    "version": "1.2.0",
-    "description": "ONE ICTMS Laravel API: registration, email and login OTP, password recovery, and JWT authentication stored in an HttpOnly cookie for browser clients. Redis stores OTP challenges and revoked JWT state. Browser authentication routes use Laravel web middleware for session-backed CSRF protection. The URL base /api plus paths /v1/auth/* yields /api/v1/auth/*. Browser POST endpoints require Laravel CSRF session cookies and a corresponding X-XSRF-TOKEN header; Bearer clients using the same web-protected routes also need CSRF unless routed separately. Library APIs provide Department, Division, and Position lists and authenticated administrative CRUD. Library view/update/delete IDs are supplied in JSON request bodies, never in URL paths. Mutating operations require appropriate administrative authorization before production deployment."
+    "version": "1.5.0",
+    "description": "ONE ICTMS Laravel API: registration, email and login OTP, password recovery, and JWT authentication stored in an HttpOnly cookie for browser clients. Redis stores OTP challenges and revoked JWT state. Browser authentication routes use Laravel web middleware for session-backed CSRF protection. The URL base /api plus paths /v1/auth/* yields /api/v1/auth/*. Browser POST endpoints require Laravel CSRF session cookies and a corresponding X-XSRF-TOKEN header; Bearer clients using the same web-protected routes also need CSRF unless routed separately. Library APIs provide Department, Division, and Position lists and authenticated administrative CRUD. Library view/update/delete IDs are supplied in JSON request bodies, never in URL paths. Mutating operations require appropriate administrative authorization before production deployment. System Registry API provides authenticated portfolio CRUD for system profiles, technology stacks, stakeholders, documents, and Git repository metadata. Registry IDs are supplied in JSON request bodies rather than URL paths. Registry schema updated for RegistryDesc, nullable Department-linked managing office, Department-linked business owner, and Library-linked numeric reference IDs. Includes seven Registry Library groups (Development Type, Managing Type, Development Solution Type, Stakeholder Type, Document Type, Registry Status, and Tech Stack), each with five CRUD endpoints. List APIs expose active values; protected mutations use JSON bodies."
   },
   "servers": [
     {
@@ -29,16 +29,12 @@
       "description": "Password recovery and change"
     },
     {
-      "name": "Department Library",
-      "description": "Department directory list and management operations"
+      "name": "Library",
+      "description": "Library data management, including listing, viewing, creating, updating, and deleting records."
     },
     {
-      "name": "Division Library",
-      "description": "Division directory list and management operations"
-    },
-    {
-      "name": "Position Library",
-      "description": "Position directory list and management operations"
+      "name": "System Registry",
+      "description": "System portfolio, technology stack, stakeholders, documents and repositories"
     }
   ],
   "paths": {
@@ -1014,7 +1010,7 @@
     "/v1/library/departments": {
       "get": {
         "tags": [
-          "Department Library"
+          "Library"
         ],
         "operationId": "listLibraryDepartments",
         "summary": "List active departments",
@@ -1046,7 +1042,7 @@
     "/v1/library/department-view": {
       "post": {
         "tags": [
-          "Department Library"
+          "Library"
         ],
         "operationId": "departmentView",
         "summary": "View department",
@@ -1133,7 +1129,7 @@
     "/v1/library/department-create": {
       "post": {
         "tags": [
-          "Department Library"
+          "Library"
         ],
         "operationId": "departmentCreate",
         "summary": "Create department",
@@ -1220,7 +1216,7 @@
     "/v1/library/department-update": {
       "post": {
         "tags": [
-          "Department Library"
+          "Library"
         ],
         "operationId": "departmentUpdate",
         "summary": "Update department",
@@ -1307,7 +1303,7 @@
     "/v1/library/department-delete": {
       "post": {
         "tags": [
-          "Department Library"
+          "Library"
         ],
         "operationId": "departmentDelete",
         "summary": "Delete department",
@@ -1394,7 +1390,7 @@
     "/v1/library/divisions": {
       "get": {
         "tags": [
-          "Division Library"
+          "Library"
         ],
         "operationId": "listLibraryDivisions",
         "summary": "List active divisions",
@@ -1426,7 +1422,7 @@
     "/v1/library/division-view": {
       "post": {
         "tags": [
-          "Division Library"
+          "Library"
         ],
         "operationId": "divisionView",
         "summary": "View division",
@@ -1513,7 +1509,7 @@
     "/v1/library/division-create": {
       "post": {
         "tags": [
-          "Division Library"
+          "Library"
         ],
         "operationId": "divisionCreate",
         "summary": "Create division",
@@ -1600,7 +1596,7 @@
     "/v1/library/division-update": {
       "post": {
         "tags": [
-          "Division Library"
+          "Library"
         ],
         "operationId": "divisionUpdate",
         "summary": "Update division",
@@ -1687,7 +1683,7 @@
     "/v1/library/division-delete": {
       "post": {
         "tags": [
-          "Division Library"
+          "Library"
         ],
         "operationId": "divisionDelete",
         "summary": "Delete division",
@@ -1774,7 +1770,7 @@
     "/v1/library/positions": {
       "get": {
         "tags": [
-          "Position Library"
+          "Library"
         ],
         "operationId": "listLibraryPositions",
         "summary": "List active positions",
@@ -1806,7 +1802,7 @@
     "/v1/library/position-view": {
       "post": {
         "tags": [
-          "Position Library"
+          "Library"
         ],
         "operationId": "positionView",
         "summary": "View position",
@@ -1893,7 +1889,7 @@
     "/v1/library/position-create": {
       "post": {
         "tags": [
-          "Position Library"
+          "Library"
         ],
         "operationId": "positionCreate",
         "summary": "Create position",
@@ -1980,7 +1976,7 @@
     "/v1/library/position-update": {
       "post": {
         "tags": [
-          "Position Library"
+          "Library"
         ],
         "operationId": "positionUpdate",
         "summary": "Update position",
@@ -2067,7 +2063,7 @@
     "/v1/library/position-delete": {
       "post": {
         "tags": [
-          "Position Library"
+          "Library"
         ],
         "operationId": "positionDelete",
         "summary": "Delete position",
@@ -2144,6 +2140,3050 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/registry": {
+      "get": {
+        "tags": [
+          "System Registry"
+        ],
+        "summary": "List registries",
+        "operationId": "list_registries",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "419": {
+            "description": "CSRF token mismatch (if web middleware protects this endpoint)"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryListResponse"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires authenticated user (auth:api). Registry identifiers are in JSON request bodies, never URL parameters. Lists all registries and related Library labels. Apply authorization policies for permitted Registry administrators."
+      }
+    },
+    "/v1/registry/create": {
+      "post": {
+        "tags": [
+          "System Registry"
+        ],
+        "summary": "Create registry",
+        "operationId": "create_registry",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "419": {
+            "description": "CSRF token mismatch (if web middleware protects this endpoint)"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryCreateRequest"
+              }
+            }
+          }
+        },
+        "description": "Requires authenticated user (auth:api). Registry identifiers are in JSON request bodies, never URL parameters. Validates referenced Library IDs against active records.  Apply authorization policies for permitted Registry administrators."
+      }
+    },
+    "/v1/registry/view": {
+      "post": {
+        "tags": [
+          "System Registry"
+        ],
+        "summary": "View registry",
+        "operationId": "view_registry",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "419": {
+            "description": "CSRF token mismatch (if web middleware protects this endpoint)"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryIdRequest"
+              }
+            }
+          }
+        },
+        "description": "Requires authenticated user (auth:api). Registry identifiers are in JSON request bodies, never URL parameters. Validates referenced Library IDs against active records.  Apply authorization policies for permitted Registry administrators."
+      }
+    },
+    "/v1/registry/update": {
+      "post": {
+        "tags": [
+          "System Registry"
+        ],
+        "summary": "Update registry",
+        "operationId": "update_registry",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "419": {
+            "description": "CSRF token mismatch (if web middleware protects this endpoint)"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryUpdateRequest"
+              }
+            }
+          }
+        },
+        "description": "Requires authenticated user (auth:api). Registry identifiers are in JSON request bodies, never URL parameters. Validates referenced Library IDs against active records.  Updating included stakeholders/docs replaces that full list; omitted related sections remain unchanged. Apply authorization policies for permitted Registry administrators."
+      }
+    },
+    "/v1/registry/delete": {
+      "post": {
+        "tags": [
+          "System Registry"
+        ],
+        "summary": "Delete registry",
+        "operationId": "delete_registry",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "419": {
+            "description": "CSRF token mismatch (if web middleware protects this endpoint)"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryIdRequest"
+              }
+            }
+          }
+        },
+        "description": "Requires authenticated user (auth:api). Registry identifiers are in JSON request bodies, never URL parameters. Validates referenced Library IDs against active records. Deleting permanently removes registry and related records. Apply authorization policies for permitted Registry administrators."
+      }
+    },
+    "/v1/library/development-types": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentTypeLibraryList",
+        "summary": "List development type records",
+        "description": "Returns active development type records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Development Type records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentTypeLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-type-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentTypeLibraryView",
+        "summary": "View development type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Type viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-type-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentTypeLibraryCreate",
+        "summary": "Create development type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevelopmentTypeLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Development Type created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-type-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentTypeLibraryUpdate",
+        "summary": "Update development type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevelopmentTypeLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Type updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-type-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentTypeLibraryDelete",
+        "summary": "Delete development type",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Type deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/managing-types": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "managingTypeLibraryList",
+        "summary": "List managing type records",
+        "description": "Returns active managing type records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Managing Type records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagingTypeLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/managing-type-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "managingTypeLibraryView",
+        "summary": "View managing type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Managing Type viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagingTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/managing-type-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "managingTypeLibraryCreate",
+        "summary": "Create managing type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagingTypeLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Managing Type created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagingTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/managing-type-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "managingTypeLibraryUpdate",
+        "summary": "Update managing type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagingTypeLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Managing Type updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagingTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/managing-type-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "managingTypeLibraryDelete",
+        "summary": "Delete managing type",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Managing Type deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-solution-types": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentSolutionTypeLibraryList",
+        "summary": "List development solution type records",
+        "description": "Returns active development solution type records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Development Solution Type records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-solution-type-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentSolutionTypeLibraryView",
+        "summary": "View development solution type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Solution Type viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-solution-type-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentSolutionTypeLibraryCreate",
+        "summary": "Create development solution type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Development Solution Type created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-solution-type-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentSolutionTypeLibraryUpdate",
+        "summary": "Update development solution type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Solution Type updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/development-solution-type-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "developmentSolutionTypeLibraryDelete",
+        "summary": "Delete development solution type",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Development Solution Type deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/stakeholder-types": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "stakeholderTypeLibraryList",
+        "summary": "List stakeholder type records",
+        "description": "Returns active stakeholder type records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Stakeholder Type records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderTypeLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/stakeholder-type-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "stakeholderTypeLibraryView",
+        "summary": "View stakeholder type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stakeholder Type viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/stakeholder-type-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "stakeholderTypeLibraryCreate",
+        "summary": "Create stakeholder type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StakeholderTypeLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stakeholder Type created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/stakeholder-type-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "stakeholderTypeLibraryUpdate",
+        "summary": "Update stakeholder type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StakeholderTypeLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stakeholder Type updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/stakeholder-type-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "stakeholderTypeLibraryDelete",
+        "summary": "Delete stakeholder type",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stakeholder Type deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/document-types": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "documentTypeLibraryList",
+        "summary": "List document type records",
+        "description": "Returns active document type records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Document Type records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/document-type-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "documentTypeLibraryView",
+        "summary": "View document type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document Type viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/document-type-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "documentTypeLibraryCreate",
+        "summary": "Create document type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentTypeLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document Type created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/document-type-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "documentTypeLibraryUpdate",
+        "summary": "Update document type",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentTypeLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document Type updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/document-type-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "documentTypeLibraryDelete",
+        "summary": "Delete document type",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document Type deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/registry-statuses": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "registryStatusLibraryList",
+        "summary": "List registry status records",
+        "description": "Returns active registry status records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Registry Status records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryStatusLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/registry-status-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "registryStatusLibraryView",
+        "summary": "View registry status",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registry Status viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryStatusLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/registry-status-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "registryStatusLibraryCreate",
+        "summary": "Create registry status",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryStatusLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registry Status created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryStatusLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/registry-status-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "registryStatusLibraryUpdate",
+        "summary": "Update registry status",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryStatusLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registry Status updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryStatusLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/registry-status-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "registryStatusLibraryDelete",
+        "summary": "Delete registry status",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registry Status deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/tech-stacks": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "techStackLibraryList",
+        "summary": "List tech stack records",
+        "description": "Returns active tech stack records for dropdowns. No parameters are required.",
+        "responses": {
+          "200": {
+            "description": "Tech Stack records retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechStackLibraryListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/tech-stack-view": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "techStackLibraryView",
+        "summary": "View tech stack",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tech Stack viewd successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechStackLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/tech-stack-create": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "techStackLibraryCreate",
+        "summary": "Create tech stack",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechStackLibraryCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tech Stack created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechStackLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/tech-stack-update": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "techStackLibraryUpdate",
+        "summary": "Update tech stack",
+        "description": "Requires auth:api. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TechStackLibraryUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tech Stack updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechStackLibraryItemResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/library/tech-stack-delete": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "techStackLibraryDelete",
+        "summary": "Delete tech stack",
+        "description": "Requires auth:api. Deactivates by setting is_active=false; does not physically delete. IDs and other submitted values are in the JSON request body only. Add administrator permission checks before production.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistryLibraryIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tech Stack deactivated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryLibrarySuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "419": {
+            "description": "CSRF mismatch, if applicable to configured middleware",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient privileges if authorization policy is configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -2963,6 +6003,1449 @@
             "example": "Department deactivated successfully."
           }
         }
+      },
+      "TechStackInput": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "frontend_stack": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "example": 1
+            },
+            "nullable": true,
+            "description": "IDs from active tech_stacks Library records"
+          },
+          "backend_stack": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "example": 1
+            },
+            "nullable": true,
+            "description": "IDs from active tech_stacks Library records"
+          },
+          "database": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "server_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "server_name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          }
+        }
+      },
+      "StakeholderInput": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "stakeholder_type"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "example": 1,
+            "description": "Existing users.id"
+          },
+          "stakeholder_type": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active stakeholder_types.id"
+          }
+        }
+      },
+      "DocumentInput": {
+        "type": "object",
+        "required": [
+          "docs_type",
+          "file_path"
+        ],
+        "properties": {
+          "docs_type": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active document_types.id"
+          },
+          "file_path": {
+            "type": "string",
+            "maxLength": 2048,
+            "example": "registry/ictms/srs.pdf",
+            "description": "Existing server-side document path. This endpoint does not upload files."
+          }
+        }
+      },
+      "RepositoryInput": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "staging_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "production_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "repo_git": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "development_solution_type": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Active development_solution_types.id"
+          }
+        }
+      },
+      "RegistryCreateRequest": {
+        "type": "object",
+        "required": [
+          "system_name",
+          "status"
+        ],
+        "properties": {
+          "system_name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "ONE ICTMS"
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Integrated ICT governance system"
+          },
+          "business_owner": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1,
+            "description": "Active departments.id"
+          },
+          "status": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active registry_statuses.id"
+          },
+          "desc": {
+            "$ref": "#/components/schemas/RegistryDescInput"
+          },
+          "repo": {
+            "$ref": "#/components/schemas/RepositoryInput"
+          },
+          "tech_stack": {
+            "$ref": "#/components/schemas/TechStackInput"
+          },
+          "stakeholders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StakeholderInput"
+            }
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentInput"
+            }
+          }
+        },
+        "example": {
+          "system_name": "ONE ICTMS",
+          "alias": "ICTMS",
+          "description": "Integrated ICT governance system",
+          "business_owner": 1,
+          "status": 1,
+          "desc": {
+            "managing_type": 1,
+            "managing_office": null,
+            "third_party_company": null,
+            "project_roll_on": "2026-10-01",
+            "project_sign_off": null,
+            "estimation_project_duration": 120
+          },
+          "repo": {
+            "staging_url": null,
+            "production_url": null,
+            "repo_git": "https://github.com/example/one-ictms",
+            "development_solution_type": 1
+          },
+          "tech_stack": {
+            "frontend_stack": [
+              1,
+              2
+            ],
+            "backend_stack": [
+              3
+            ],
+            "database": "MySQL",
+            "server_type": "Cloud",
+            "server_name": "app-prod"
+          },
+          "stakeholders": [
+            {
+              "user_id": 1,
+              "stakeholder_type": 1
+            }
+          ],
+          "docs": [
+            {
+              "docs_type": 1,
+              "file_path": "registry/ictms/srs.pdf"
+            }
+          ]
+        }
+      },
+      "RegistryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "system_name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "ONE ICTMS"
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "ICTMS"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Integrated ICT governance system"
+          },
+          "business_owner": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1,
+            "description": "Active departments.id"
+          },
+          "status": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active registry_statuses.id"
+          },
+          "desc": {
+            "$ref": "#/components/schemas/RegistryDescInput"
+          },
+          "repo": {
+            "$ref": "#/components/schemas/RepositoryInput"
+          },
+          "tech_stack": {
+            "$ref": "#/components/schemas/TechStackInput"
+          },
+          "stakeholders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StakeholderInput"
+            }
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentInput"
+            }
+          }
+        },
+        "description": "Partial update: omitted sections remain unchanged. Sending stakeholders or docs replaces the entire corresponding list. Null desc/repo/tech_stack has no effect in the current service."
+      },
+      "RegistryIdRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "Registry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "system_name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "alias": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "business_owner": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Department ID"
+          },
+          "business_owner_department": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "alias": {
+                "type": "string",
+                "example": "ICTMS"
+              },
+              "name": {
+                "type": "string",
+                "example": "Information and Communications Technology Management Service"
+              }
+            }
+          },
+          "status": {
+            "type": "integer",
+            "description": "Registry status Library ID"
+          },
+          "status_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "desc": {
+            "$ref": "#/components/schemas/RegistryDesc"
+          },
+          "tech_stack": {
+            "$ref": "#/components/schemas/RegistryTechStack"
+          },
+          "stakeholders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistryStakeholder"
+            }
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistryDocument"
+            }
+          },
+          "repo": {
+            "$ref": "#/components/schemas/RegistryRepo"
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Registry"
+          }
+        }
+      },
+      "RegistryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Registries retrieved successfully."
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Registry"
+            }
+          }
+        }
+      },
+      "DeleteResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Registry deleted successfully."
+          }
+        }
+      },
+      "RegistryDescInput": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "managing_type": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Active managing_types.id"
+          },
+          "managing_office": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Optional active departments.id; null clears the managing office"
+          },
+          "third_party_company": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "project_roll_on": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "project_sign_off": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "estimation_project_duration": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Estimated duration in days"
+          }
+        }
+      },
+      "RegistryDesc": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "registry_id": {
+            "type": "integer"
+          },
+          "managing_type": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Active managing_types.id"
+          },
+          "managing_office": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Optional active departments.id; null clears the managing office"
+          },
+          "third_party_company": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "project_roll_on": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "project_sign_off": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "estimation_project_duration": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Estimated duration in days"
+          },
+          "managing_type_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "managing_office_department": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "alias": {
+                "type": "string",
+                "example": "ICTMS"
+              },
+              "name": {
+                "type": "string",
+                "example": "Information and Communications Technology Management Service"
+              }
+            }
+          }
+        }
+      },
+      "RegistryRepo": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "registry_id": {
+            "type": "integer"
+          },
+          "staging_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "production_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "repo_git": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "development_solution_type": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Active development_solution_types.id"
+          },
+          "development_solution_type_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryTechStack": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "registry_id": {
+            "type": "integer"
+          },
+          "frontend_stack": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "example": 1
+            },
+            "nullable": true,
+            "description": "IDs from active tech_stacks Library records"
+          },
+          "backend_stack": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "example": 1
+            },
+            "nullable": true,
+            "description": "IDs from active tech_stacks Library records"
+          },
+          "database": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "server_type": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "server_name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryStakeholder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "registry_id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 1,
+            "description": "Existing users.id"
+          },
+          "stakeholder_type": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active stakeholder_types.id"
+          },
+          "stakeholder_type_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryDocument": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "registry_id": {
+            "type": "integer"
+          },
+          "docs_type": {
+            "type": "integer",
+            "example": 1,
+            "description": "Active document_types.id"
+          },
+          "file_path": {
+            "type": "string",
+            "maxLength": 2048,
+            "example": "registry/ictms/srs.pdf",
+            "description": "Existing server-side document path. This endpoint does not upload files."
+          },
+          "docs_type_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryLibraryIdRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          }
+        }
+      },
+      "RegistryLibrarySuccessResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DevelopmentTypeLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DevelopmentTypeLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "DevelopmentTypeLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "DevelopmentTypeLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DevelopmentTypeLibraryItem"
+          }
+        }
+      },
+      "DevelopmentTypeLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DevelopmentTypeLibraryItem"
+            }
+          }
+        }
+      },
+      "ManagingTypeLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Managing Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ManagingTypeLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Managing Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "ManagingTypeLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Managing Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "ManagingTypeLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ManagingTypeLibraryItem"
+          }
+        }
+      },
+      "ManagingTypeLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagingTypeLibraryItem"
+            }
+          }
+        }
+      },
+      "DevelopmentSolutionTypeLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Solution Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DevelopmentSolutionTypeLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Solution Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "DevelopmentSolutionTypeLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Development Solution Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "DevelopmentSolutionTypeLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryItem"
+          }
+        }
+      },
+      "DevelopmentSolutionTypeLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DevelopmentSolutionTypeLibraryItem"
+            }
+          }
+        }
+      },
+      "StakeholderTypeLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Stakeholder Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "StakeholderTypeLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Stakeholder Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "StakeholderTypeLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Stakeholder Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "StakeholderTypeLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StakeholderTypeLibraryItem"
+          }
+        }
+      },
+      "StakeholderTypeLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StakeholderTypeLibraryItem"
+            }
+          }
+        }
+      },
+      "DocumentTypeLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Document Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DocumentTypeLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Document Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "DocumentTypeLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Document Type"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "DocumentTypeLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DocumentTypeLibraryItem"
+          }
+        }
+      },
+      "DocumentTypeLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentTypeLibraryItem"
+            }
+          }
+        }
+      },
+      "RegistryStatusLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Active"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "RegistryStatusLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Active"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "RegistryStatusLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Active"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "RegistryStatusLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RegistryStatusLibraryItem"
+          }
+        }
+      },
+      "RegistryStatusLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistryStatusLibraryItem"
+            }
+          }
+        }
+      },
+      "TechStackLibraryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Laravel"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "12"
+          }
+        }
+      },
+      "TechStackLibraryCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Laravel"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "12"
+          }
+        }
+      },
+      "TechStackLibraryUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Laravel"
+          },
+          "is_active": {
+            "type": "boolean",
+            "example": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "example": "12"
+          }
+        },
+        "description": "Specify only changed fields plus id."
+      },
+      "TechStackLibraryItemResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TechStackLibraryItem"
+          }
+        }
+      },
+      "TechStackLibraryListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechStackLibraryItem"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -2971,6 +7454,11 @@
         "scheme": "bearer",
         "bearerFormat": "JWT",
         "description": "Use bearer JWT where supported; browser authentication uses an HttpOnly JWT cookie."
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "ictms_access_token"
       }
     }
   }

@@ -36,6 +36,7 @@ Route::group([], function () {
             Route::post('/department-create', 'departmentCreate')->name('library.department.create');
             Route::post('/department-update', 'departmentUpdate')->name('library.department.update');
             Route::post('/department-delete', 'departmentDelete')->name('library.department.delete');
+            Route::post('/department-users', 'departmentUsers')->name('library.department.users');
         });
 
         Route::controller(DivisionController::class)->group(function () {

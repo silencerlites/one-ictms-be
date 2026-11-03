@@ -29,6 +29,33 @@ class DepartmentController extends Controller
         );
     }
 
+    public function departmentUsers(DepartmentRequest $request): JsonResponse
+    {
+        $departmentId = (int) $request->validated('department_id');
+        $users = $this->manager->users($departmentId);
+
+        $data = $users->map(static function ($user) use ($departmentId): array {
+            // A user's display name may be stored in users.name or user_details.
+            $name = trim((string) ($user->name ?? ''));
+            if ($name === '') {
+                $name = trim(implode(' ', array_filter([
+                    data_get($user, 'details.first_name'),
+                    data_get($user, 'details.middle_name'),
+                    data_get($user, 'details.last_name'),
+                ], static fn ($part): bool => is_string($part) && trim($part) !== '')));
+            }
+
+            return [
+                'id' => (int) $user->getKey(),
+                'name' => $name !== '' ? $name : 'User #'.$user->getKey(),
+                'email' => $user->email,
+                'department_id' => $departmentId,
+            ];
+        })->values()->all();
+
+        return $this->respond('Department users retrieved successfully.', $data);
+    }
+
     public function departmentView(DepartmentRequest $request): JsonResponse
     {
         $model = $this->manager->view((int) $request->validated('id'));

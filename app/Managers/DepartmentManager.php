@@ -11,6 +11,7 @@ class DepartmentManager
     public function __construct(private readonly DepartmentService $service) {}
 
     public function all(): Collection { return $this->service->all(); }
+    public function users(int $departmentId): Collection { return $this->service->users($departmentId); }
     public function view(int $id): Department { return $this->service->view($id); }
     public function create(array $data): Department { return $this->service->create($data); }
     public function update(int $id, array $data): Department { return $this->service->update($id, $data); }

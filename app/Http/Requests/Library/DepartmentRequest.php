@@ -9,13 +9,22 @@ class DepartmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Write routes enforce auth:api; add role/permission middleware as needed.
+        return true; // Authenticated routes also need appropriate access control.
     }
 
     public function rules(): array
     {
         $action = $this->route()?->getActionMethod();
         $entity = 'departments';
+
+        if ($action === 'departmentUsers') {
+            return [
+                'department_id' => [
+                    'required', 'integer',
+                    Rule::exists('departments', 'id')->where('is_active', true),
+                ],
+            ];
+        }
 
         if (str_ends_with((string) $action, 'View') || str_ends_with((string) $action, 'Delete')) {
             return ['id' => ['required', 'integer', Rule::exists($entity, 'id')]];
@@ -31,9 +40,6 @@ class DepartmentRequest extends FormRequest
             ];
             if ($update) {
                 $rules['id'] = ['required', 'integer', Rule::exists($entity, 'id')];
-            }
-            if ($entity === 'divisions') {
-                $rules['department_id'] = [$required, 'integer', Rule::exists('departments', 'id')->where('is_active', true)];
             }
             return $rules;
         }

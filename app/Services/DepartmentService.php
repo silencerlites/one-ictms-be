@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Department;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -13,6 +14,19 @@ class DepartmentService
         return Department::query()
             ->where('is_active', true)
             ->orderBy('name')
+            ->get();
+    }
+
+    public function users(int $departmentId): Collection
+    {
+        // Uses User::details() -> user_details.department_id.
+        // A user is returned once even if several detail records match.
+        return User::query()
+            ->with('details')
+            ->whereHas('details', static function ($query) use ($departmentId): void {
+                $query->where('department_id', $departmentId);
+            })
+            ->orderBy('id')
             ->get();
     }
 
@@ -43,7 +57,6 @@ class DepartmentService
         if ($model->userDetails()->exists()) {
             throw ValidationException::withMessages(['id' => 'This record is assigned to users and cannot be deleted.']);
         }
-        // Soft deactivation preserves foreign-key references.
         $model->update(['is_active' => false]);
     }
 }

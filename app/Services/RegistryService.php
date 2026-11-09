@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class RegistryService
 {
-    private const RELATIONS = ['registryDesc.managingTypeLibrary', 'registryDesc.managingOfficeDepartment', 'statusLibrary', 'businessOwnerDepartment', 'techStack', 'stakeholders.user', 'stakeholders.stakeholderTypeLibrary', 'docs.documentTypeLibrary', 'repo.developmentSolutionTypeLibrary'];
+    private const RELATIONS = ['registryDesc.managingTypeLibrary', 'registryDesc.managingOfficeDepartment', 'statusLibrary', 'businessOwnerDepartment', 'techStack', 'stakeholders.user', 'stakeholders.stakeholderTypeLibrary', 'docs.documentTypeLibrary', 'repos.developmentSolutionTypeLibrary'];
     private const RELATED = ['desc', 'tech_stack', 'stakeholders', 'docs', 'repo'];
 
     public function all(): Collection
@@ -51,6 +51,69 @@ class RegistryService
         });
     }
 
+    /**
+     * FULLSTACK is exactly two rows (frontend/backend); every other type is one.
+     * Preserve the existing `repo` request object so older clients still work.
+     */
+    private function syncRepositories(Registry $registry, ?array $data): void
+    {
+        if ($data === null) {
+            $registry->repos()->delete();
+            return;
+        }
+        if ($data === []) return;
+
+        $solutionId = $data['development_solution_type'] ?? null;
+        if ($solutionId === null) {
+            throw ValidationException::withMessages([
+                'repo.development_solution_type' => 'Select a Development Solution Type.',
+            ]);
+        }
+        $solutionName = DB::table('development_solution_types')
+            ->where('id', $solutionId)->value('name');
+        $isFullstack = strtoupper(preg_replace('/[^A-Za-z]/', '', (string) $solutionName)) === 'FULLSTACK';
+
+        if ($isFullstack) {
+            $fields = ['repo_git', 'staging_url', 'production_url'];
+            $rows = [];
+            foreach (['frontend', 'backend'] as $scope) {
+                $values = [
+                    'development_solution_type' => $solutionId,
+                    'repo_scope' => $scope,
+                ];
+                foreach ($fields as $field) {
+                    // Preserve legacy primary repo fields for an old client that has
+                    // not yet started supplying dedicated frontend_* properties.
+                    $values[$field] = $data[$scope.'_'.$field]
+                        ?? ($scope === 'frontend' ? ($data[$field] ?? null) : null);
+                }
+                $rows[$scope] = $values;
+            }
+            // Upgrade legacy records previously stored as one `single` row.
+            $legacy = $registry->repos()->where('repo_scope', 'single')->first();
+            if ($legacy && !$registry->repos()->where('repo_scope', 'frontend')->exists()) {
+                $legacy->repo_scope = 'frontend';
+                $legacy->save();
+            }
+            $registry->repos()->whereNotIn('repo_scope', ['frontend', 'backend'])->delete();
+            foreach ($rows as $scope => $values) {
+                $registry->repos()->updateOrCreate(['repo_scope' => $scope], $values);
+            }
+            return;
+        }
+
+        // Other Development Solution Types must have one repository record.
+        $values = [
+            'development_solution_type' => $solutionId,
+            'repo_scope' => 'single',
+            'repo_git' => $data['repo_git'] ?? null,
+            'staging_url' => $data['staging_url'] ?? null,
+            'production_url' => $data['production_url'] ?? null,
+        ];
+        $registry->repos()->where('repo_scope', '!=', 'single')->delete();
+        $registry->repos()->updateOrCreate(['repo_scope' => 'single'], $values);
+    }
+
     private function syncRelations(Registry $registry, array $data): void
     {
         if (array_key_exists('desc', $data)) {
@@ -67,12 +130,7 @@ class RegistryService
         }
 
         if (array_key_exists('repo', $data)) {
-            if ($data['repo'] === null) {
-                $registry->repo()->delete();
-            } elseif ($data['repo'] !== []) {
-                
-                $registry->repo()->updateOrCreate([], $data['repo']);
-            }
+            $this->syncRepositories($registry, $data['repo']);
         }
 
         if (array_key_exists('stakeholders', $data)) {

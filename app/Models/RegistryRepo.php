@@ -11,6 +11,7 @@ class RegistryRepo extends Model
 
     protected $fillable = [
         'registry_id',
+        'repo_scope',
         'staging_url',
         'production_url',
         'repo_git',

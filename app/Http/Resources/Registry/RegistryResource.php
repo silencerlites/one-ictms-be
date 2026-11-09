@@ -79,19 +79,46 @@ class RegistryResource extends JsonResource
                     'updated_at' => $doc->updated_at,
                 ])->all();
             }),
-            'repo' => $this->whenLoaded('repo', function () {
-                $repo = $this->repo;
-                return $repo ? [
+            // Legacy repo object for the current Vue form, including its six
+            // frontend_*/backend_* properties in FULLSTACK mode.
+            'repo' => $this->whenLoaded('repos', function () {
+                $repos = $this->repos;
+                $frontend = $repos->firstWhere('repo_scope', 'frontend');
+                $backend = $repos->firstWhere('repo_scope', 'backend');
+                $primary = $frontend ?? $repos->firstWhere('repo_scope', 'single');
+                if (!$primary) return null;
+                return [
+                    'id' => $primary->id,
+                    'registry_id' => $primary->registry_id,
+                    'staging_url' => $primary->repo_scope === 'single' ? $primary->staging_url : null,
+                    'production_url' => $primary->repo_scope === 'single' ? $primary->production_url : null,
+                    'repo_git' => $primary->repo_scope === 'single' ? $primary->repo_git : null,
+                    'development_solution_type' => $primary->development_solution_type,
+                    'development_solution_type_name' => $primary->developmentSolutionTypeLibrary?->name,
+                    'frontend_repo_git' => $frontend?->repo_git,
+                    'frontend_staging_url' => $frontend?->staging_url,
+                    'frontend_production_url' => $frontend?->production_url,
+                    'backend_repo_git' => $backend?->repo_git,
+                    'backend_staging_url' => $backend?->staging_url,
+                    'backend_production_url' => $backend?->production_url,
+                    'created_at' => $primary->created_at,
+                    'updated_at' => $primary->updated_at,
+                ];
+            }),
+            // Canonical rows, useful for new clients and auditing each scope.
+            'repos' => $this->whenLoaded('repos', function () {
+                return $this->repos->sortBy('repo_scope')->map(fn ($repo) => [
                     'id' => $repo->id,
                     'registry_id' => $repo->registry_id,
+                    'repo_scope' => $repo->repo_scope,
+                    'repo_git' => $repo->repo_git,
                     'staging_url' => $repo->staging_url,
                     'production_url' => $repo->production_url,
-                    'repo_git' => $repo->repo_git,
                     'development_solution_type' => $repo->development_solution_type,
                     'development_solution_type_name' => $repo->developmentSolutionTypeLibrary?->name,
                     'created_at' => $repo->created_at,
                     'updated_at' => $repo->updated_at,
-                ] : null;
+                ])->values()->all();
             }),
         ];
     }

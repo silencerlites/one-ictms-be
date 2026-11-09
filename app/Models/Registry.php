@@ -29,9 +29,17 @@ class Registry extends Model
         return $this->hasOne(RegistryTechStack::class, 'registry_id');
     }
 
+    /** Backward-compatible primary repository (single for normal, frontend for FULLSTACK). */
     public function repo(): HasOne
     {
-        return $this->hasOne(RegistryRepo::class, 'registry_id');
+        return $this->hasOne(RegistryRepo::class, 'registry_id')
+            ->whereIn('repo_scope', ['single', 'frontend']);
+    }
+
+    /** All repository records: one for normal, two for FULLSTACK. */
+    public function repos(): HasMany
+    {
+        return $this->hasMany(RegistryRepo::class, 'registry_id');
     }
 
     public function stakeholders(): HasMany
